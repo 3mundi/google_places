@@ -317,6 +317,7 @@ module GooglePlaces
       retry_options[:delay]  ||= 5
       retry_options[:status] = [retry_options[:status]] unless retry_options[:status].is_a?(Array)
       @response = self.class.get(url, :query => options, :follow_redirects => follow_redirects)
+      run_after_request_callback({ url: url, query: options, follow_redirects: follow_redirects})
 
       # puts @response.request.last_uri.to_s
 
@@ -327,6 +328,7 @@ module GooglePlaces
           sleep(retry_options[:delay])
 
           @response = self.class.get(url, :query => options, :follow_redirects => follow_redirects)
+          run_after_request_callback({ url: url, query: options, follow_redirects: follow_redirects})
 
           break unless retry_options[:status].include?(@response.parsed_response['status'])
         end
@@ -347,8 +349,14 @@ module GooglePlaces
       end
     end
 
+    def run_after_request_callback(attrs = {})
+      GooglePlaces.after_request_callack.call(attrs)
+    end
+
     def execute
       @response = self.class.get(url, :query => options, :follow_redirects => follow_redirects)
+      run_after_request_callback({ url: url, query: options, follow_redirects: follow_redirects})
+      @response
     end
 
     # Parse errors from the server respons, if any
